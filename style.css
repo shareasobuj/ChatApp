@@ -77,7 +77,7 @@ body {
 .hidden { display: none !important; }
 .chat-hidden { display: none !important; }
 
-/* Chat UI */
+/* Chat Container */
 #chat-container {
     width: 100%;
     max-width: 480px;
