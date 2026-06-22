@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Device WhatsApp Clone</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/piesocket-js@2"></script>
+</head>
+<body>
+
+    <div id="login-overlay" class="overlay">
+        <div class="login-box">
+            <h3>Enter Your Name to Join Chat</h3>
+            <input type="text" id="username-input" placeholder="e.g., Sharea Sobuj">
+            <button onclick="joinChat()">Join Chat Room</button>
+        </div>
+    </div>
+
+    <div class="whatsapp-container">
+        <main class="chat-window" style="width: 100%;">
+            <header class="chat-header">
+                <div class="active-user-details">
+                    <img src="https://avatar.iran.liara.run/public/31" alt="Group" class="user-avatar">
+                    <div>
+                        <h4>Global Public Room</h4>
+                        <p class="user-status" id="online-status">Connecting to network...</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="chat-body" id="chat-messages-container">
+                </div>
+
+            <div class="image-preview-box" id="upload-preview-box" style="display: none;">
+                <span class="close-preview" onclick="cancelImageSelection()">&times;</span>
+                <img id="image-to-upload" src="" alt="Preview">
+                <div class="upload-loading" id="upload-loader" style="display: none;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Uploading to ImgBB & Syncing to all mobiles...
+                </div>
+            </div>
+
+            <footer class="chat-footer">
+                <div class="footer-icons">
+                    <label for="image-input">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </label>
+                    <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="previewSelectedImage(this)">
+                </div>
+                
+                <input type="text" id="message-input" placeholder="Type a message" onkeypress="handleKeyPress(event)">
+                
+                <button class="send-btn" onclick="sendMessage()">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </footer>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
