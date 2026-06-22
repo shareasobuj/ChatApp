@@ -13,21 +13,20 @@
         <div class="login-box">
             <h2><i class="fab fa-whatsapp"></i> Private Chat</h2>
             
-            <div id="auth-fields">
+            <div id="auth-section">
                 <input type="email" id="email" placeholder="আপনার ইমেইল লিখুন..." required>
                 <input type="password" id="password" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)..." required>
-                
                 <input type="text" id="username" placeholder="আপনার নাম লিখুন..." class="hidden">
                 
                 <button id="auth-main-btn">লগইন করুন</button>
-                
                 <p class="toggle-text" id="toggle-auth">নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন</p>
             </div>
 
-            <div id="room-fields" class="hidden">
+            <div id="room-section" class="hidden">
                 <p class="welcome-msg">স্বাগতম, <span id="user-display-name"></span>!</p>
                 <input type="text" id="room-id" placeholder="রুম আইডি (যেমন: room123)..." required>
                 <button id="join-btn">রুমে প্রবেশ করুন</button>
+                <button id="logout-btn" style="background-color: #d32f2f; margin-top: 5px;">লগআউট</button>
             </div>
         </div>
     </div>
@@ -38,7 +37,7 @@
                 <h3><i class="fas fa-lock"></i> <span id="current-room-title">Room</span></h3>
                 <p>ব্যবহারকারী: <span id="current-user-title">Guest</span></p>
             </div>
-            <button id="leave-btn"><i class="fas fa-sign-out-alt"></i> Leave Room</button>
+            <button id="leave-btn"><i class="fas fa-sign-out-alt"></i> Leave</button>
         </header>
 
         <main id="chat-messages" class="chat-messages"></main>
@@ -55,7 +54,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
