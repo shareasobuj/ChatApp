@@ -24,6 +24,11 @@
                 <input type="password" id="password" placeholder="পাসওয়ার্ড দিন" required>
             </div>
 
+            <div class="input-group" id="imageInputGroup" style="display: none;">
+                <label for="imageFileInput" style="display: block; text-align: left; margin-bottom: 5px; color: #666; font-size: 14px;">প্রোফাইল ছবি সিলেক্ট করুন:</label>
+                <input type="file" id="imageFileInput" accept="image/*">
+            </div>
+
             <button type="submit" id="mainBtn" class="submit-btn">লগইন করুন</button>
         </form>
 
@@ -33,29 +38,5 @@
     </div>
 
     <script type="module" src="app.js"></script>
-    
-    <script>
-        const formTitle = document.getElementById('formTitle');
-        const mainBtn = document.getElementById('mainBtn');
-        const toggleLink = document.getElementById('toggleLink');
-        let isLoginView = true;
-
-        toggleLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            isLoginView = !isLoginView;
-
-            if (!isLoginView) {
-                formTitle.innerText = "Private Chat (Sign Up)";
-                mainBtn.innerText = "সাইন-আপ করুন";
-                toggleLink.innerText = "আগের অ্যাকাউন্ট থাকলে লগইন করুন";
-                mainBtn.id = "signupBtn"; // JS ফাইলের সাথে মিলানোর জন্য ID পরিবর্তন
-            } else {
-                formTitle.innerText = "Private Chat";
-                mainBtn.innerText = "লগইন করুন";
-                toggleLink.innerText = "নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন";
-                mainBtn.id = "loginBtn";
-            }
-        });
-    </script>
 </body>
 </html>
