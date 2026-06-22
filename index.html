@@ -4,57 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Web Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
-    <div id="login-container" class="overlay">
-        <div class="login-box">
-            <h2><i class="fab fa-whatsapp"></i> Private Chat</h2>
+    <div class="chat-container">
+        <div class="brand-header">
+            <i class="fab fa-whatsapp brand-icon"></i>
+            <h2 id="formTitle">Private Chat</h2>
+        </div>
+
+        <form id="authForm">
+            <div class="input-group">
+                <input type="email" id="email" placeholder="আপনার ইমেইল দিন" required>
+            </div>
             
-            <div id="auth-section">
-                <input type="email" id="email" placeholder="আপনার ইমেইল লিখুন..." required>
-                <input type="password" id="password" placeholder="পাসওয়ার্ড (নূন্যতম ৬ অক্ষর)..." required>
-                <input type="text" id="username" placeholder="আপনার নাম লিখুন..." class="hidden">
-                
-                <button id="auth-main-btn">লগইন করুন</button>
-                <p class="toggle-text" id="toggle-auth">নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন</p>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="পাসওয়ার্ড দিন" required>
             </div>
 
-            <div id="room-section" class="hidden">
-                <p class="welcome-msg">স্বাগতম, <span id="user-display-name"></span>!</p>
-                <input type="text" id="room-id" placeholder="রুম আইডি (যেমন: room123)..." required>
-                <button id="join-btn">রুমে প্রবেশ করুন</button>
-                <button id="logout-btn" style="background-color: #d32f2f; margin-top: 5px;">লগআউট</button>
-            </div>
+            <button type="submit" id="mainBtn" class="submit-btn">লগইন করুন</button>
+        </form>
+
+        <div class="toggle-container">
+            <a href="#" id="toggleLink">নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন</a>
         </div>
     </div>
 
-    <div id="chat-container" class="chat-hidden">
-        <header class="chat-header">
-            <div class="room-info">
-                <h3><i class="fas fa-lock"></i> <span id="current-room-title">Room</span></h3>
-                <p>ব্যবহারকারী: <span id="current-user-title">Guest</span></p>
-            </div>
-            <button id="leave-btn"><i class="fas fa-sign-out-alt"></i> Leave</button>
-        </header>
+    <script type="module" src="app.js"></script>
+    
+    <script>
+        const formTitle = document.getElementById('formTitle');
+        const mainBtn = document.getElementById('mainBtn');
+        const toggleLink = document.getElementById('toggleLink');
+        let isLoginView = true;
 
-        <main id="chat-messages" class="chat-messages"></main>
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginView = !isLoginView;
 
-        <footer class="chat-footer">
-            <label for="image-input" class="upload-btn">
-                <i class="fas fa-paperclip"></i>
-                <input type="file" id="image-input" accept="image/*" style="display: none;">
-            </label>
-            <input type="text" id="message-input" placeholder="মেসেজ লিখুন..." autocomplete="off">
-            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
-        </footer>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="app.js"></script>
+            if (!isLoginView) {
+                formTitle.innerText = "Private Chat (Sign Up)";
+                mainBtn.innerText = "সাইন-আপ করুন";
+                toggleLink.innerText = "আগের অ্যাকাউন্ট থাকলে লগইন করুন";
+                mainBtn.id = "signupBtn"; // JS ফাইলের সাথে মিলানোর জন্য ID পরিবর্তন
+            } else {
+                formTitle.innerText = "Private Chat";
+                mainBtn.innerText = "লগইন করুন";
+                toggleLink.innerText = "নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন";
+                mainBtn.id = "loginBtn";
+            }
+        });
+    </script>
 </body>
 </html>
