@@ -1,4 +1,4 @@
-// ১. Firebase কনফিগারেশন (আপনার Firebase কনসোল থেকে এগুলো পরিবর্তন করুন)
+// আপনার Firebase কনফিগারেশনটি এখানে বসান
 const firebaseConfig = {
       apiKey: "AIzaSyCEdRuYGcek5H0i9esjRF6SUzfbRAF_6IY",
   authDomain: "privateapp-84e1f.firebaseapp.com",
@@ -8,19 +8,31 @@ const firebaseConfig = {
   appId: "1:328201856784:web:bdfeb67631acb323b52795",
   measurementId: "G-B0MYHMC944"
 };
+
 // --- CONFIGURATION ---
 const IMGBB_API_KEY = "6872e0a43175b6750389b34f632f4d99"; // আপনার আসল ImgBB API Key বসানো হলো
 // Firebase ইনিশিয়ালাইজেশন
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.firestore();
 
 // DOM এলিমেন্টস
 const loginContainer = document.getElementById('login-container');
 const chatContainer = document.getElementById('chat-container');
+const authFields = document.getElementById('auth-fields');
+const roomFields = document.getElementById('room-fields');
+
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
 const usernameInput = document.getElementById('username');
 const roomIdInput = document.getElementById('room-id');
+
+const authMainBtn = document.getElementById('auth-main-btn');
+const toggleAuth = document.getElementById('toggle-auth');
 const joinBtn = document.getElementById('join-btn');
 const leaveBtn = document.getElementById('leave-btn');
+const userDisplayName = document.getElementById('user-display-name');
+
 const chatMessages = document.getElementById('chat-messages');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
@@ -28,22 +40,83 @@ const imageInput = document.getElementById('image-input');
 const currentRoomTitle = document.getElementById('current-room-title');
 const currentUserTitle = document.getElementById('current-user-title');
 
-let currentUser = "";
+let isSignUpMode = false; 
+let currentUser = null;
 let currentRoom = "";
 let unsubscribeChat = null;
 
+// লগইন এবং সাইন-আপ ফর্ম টগল করার লজিক
+toggleAuth.addEventListener('click', () => {
+    isSignUpMode = !isSignUpMode;
+    if (isSignUpMode) {
+        usernameInput.classList.remove('hidden');
+        authMainBtn.innerText = "অ্যাকাউন্ট তৈরি করুন";
+        toggleAuth.innerText = "আগের অ্যাকাউন্ট আছে? লগইন করুন";
+    } else {
+        usernameInput.classList.add('hidden');
+        authMainBtn.innerText = "লগইন করুন";
+        toggleAuth.innerText = "নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন";
+    }
+});
+
+// Firebase Authentication (লগইন / সাইন-আপ প্রসেস)
+authMainBtn.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    const name = usernameInput.value.trim();
+
+    if (!email || !password) {
+        alert("দয়া করে ইমেইল এবং পাসওয়ার্ড সঠিকভাবে দিন!");
+        return;
+    }
+
+    try {
+        if (isSignUpMode) {
+            if (!name) {
+                alert("দয়া করে আপনার নাম দিন!");
+                return;
+            }
+            // নতুন অ্যাকাউন্ট তৈরি
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            // প্রোফাইলে নাম আপডেট করা
+            await userCredential.user.updateProfile({ displayName: name });
+            alert("অ্যাকাউন্ট তৈরি সফল হয়েছে!");
+        } else {
+            // লগইন করা
+            await auth.signInWithEmailAndPassword(email, password);
+        }
+    } catch (error) {
+        alert("ত্রুটি: " + error.message);
+    }
+});
+
+// ইউজারের লগইন স্ট্যাটাস চেক করা (Auth State Observer)
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        currentUser = user;
+        userDisplayName.innerText = user.displayName || "User";
+        authFields.classList.add('hidden');
+        roomFields.classList.remove('hidden'); // লগইন থাকলে রুম সিলেক্ট করার স্ক্রিন দেখাবে
+    } else {
+        currentUser = null;
+        authFields.classList.remove('hidden');
+        roomFields.classList.add('hidden');
+        chatContainer.classList.add('chat-hidden');
+        loginContainer.classList.remove('chat-hidden');
+    }
+});
+
 // রুমে জয়েন করার লজিক
 joinBtn.addEventListener('click', () => {
-    currentUser = usernameInput.value.trim();
     currentRoom = roomIdInput.value.trim().toLowerCase();
 
-    if (!currentUser || !currentRoom) {
-        alert("দয়া করে নাম এবং রুম আইডি দুটোই দিন!");
+    if (!currentRoom) {
+        alert("দয়া করে একটি রুম আইডি দিন!");
         return;
     }
 
     currentRoomTitle.innerText = `Room: ${currentRoom.toUpperCase()}`;
-    currentUserTitle.innerText = currentUser;
+    currentUserTitle.innerText = currentUser.displayName;
 
     loginContainer.classList.add('chat-hidden');
     chatContainer.classList.remove('chat-hidden');
@@ -51,7 +124,7 @@ joinBtn.addEventListener('click', () => {
     listenForMessages();
 });
 
-// চ্যাট লিসেনার (নির্দিষ্ট রুম আইডি অনুযায়ী মেসেজ লোড হবে)
+// রিয়েল-টাইম চ্যাট লিসেনার
 function listenForMessages() {
     unsubscribeChat = db.collection('rooms')
         .doc(currentRoom)
@@ -60,40 +133,35 @@ function listenForMessages() {
         .onSnapshot((snapshot) => {
             chatMessages.innerHTML = "";
             snapshot.forEach((doc) => {
-                const data = doc.data();
-                displayMessage(data);
+                displayMessage(doc.data());
             });
-            chatMessages.scrollTop = chatMessages.scrollHeight; // স্ক্রল নিচে নামানোর জন্য
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 }
 
-// মেসেজ স্ক্রিনে দেখানোর ফাংশন
+// স্ক্রিনে মেসেজ প্রদর্শন
 function displayMessage(data) {
     const messageDiv = document.createElement('div');
-    const isMe = data.sender === currentUser;
+    const isMe = data.senderEmail === currentUser.email;
     
     messageDiv.classList.add('message');
     messageDiv.classList.add(isMe ? 'sent' : 'received');
 
-    let content = `<div class="meta">${data.sender}</div>`;
-    
-    if (data.message) {
-        content += `<p>${data.message}</p>`;
-    }
-    if (data.imageUrl) {
-        content += `<img src="${data.imageUrl}" alt="Shared Image" target="_blank">`;
-    }
+    let content = `<div class="meta">${data.senderName}</div>`;
+    if (data.message) content += `<p>${data.message}</p>`;
+    if (data.imageUrl) content += `<img src="${data.imageUrl}" alt="Shared Image">`;
 
     messageDiv.innerHTML = content;
     chatMessages.appendChild(messageDiv);
 }
 
-// মেসেজ পাঠানোর ফাংশন
+// মেসেজ ডেটাবেজে পাঠানো
 async function sendMessage(text = "", imgUrl = "") {
     if (!text && !imgUrl) return;
 
     await db.collection('rooms').doc(currentRoom).collection('messages').add({
-        sender: currentUser,
+        senderName: currentUser.displayName,
+        senderEmail: currentUser.email,
         message: text,
         imageUrl: imgUrl,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -102,25 +170,16 @@ async function sendMessage(text = "", imgUrl = "") {
     messageInput.value = "";
 }
 
-// বাটনে ক্লিক করে টেক্সট মেসেজ পাঠানো
-sendBtn.addEventListener('click', () => {
-    sendMessage(messageInput.value.trim(), "");
-});
+// ইভেন্ট লিসেনারস (বার্তা পাঠানো)
+sendBtn.addEventListener('click', () => sendMessage(messageInput.value.trim(), ""));
+messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(messageInput.value.trim(), ""); });
 
-// এন্টার প্রেস করে মেসেজ পাঠানো
-messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        sendMessage(messageInput.value.trim(), "");
-    }
-});
-
-// ImgBB-তে ইমেজ আপলোড এবং চ্যাটে শেয়ার করার লজict
+// ImgBB API দিয়ে ইমেজ আপলোড
 imageInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // টেম্পোরারি ভিজ্যুয়াল ফিডব্যাক (বিকল্প)
-    messageInput.placeholder = "ছবি আপলোড হচ্ছে, অপেক্ষা করুন...";
+    messageInput.placeholder = "ছবি আপলোড হচ্ছে...";
     messageInput.disabled = true;
 
     const formData = new FormData();
@@ -134,26 +193,21 @@ imageInput.addEventListener('change', async (e) => {
         const result = await response.json();
 
         if (result.success) {
-            const uploadedImageUrl = result.data.url;
-            // ইমেজ চ্যাটে পাঠিয়ে দেওয়া হলো
-            sendMessage("", uploadedImageUrl);
+            sendMessage("", result.data.url);
         } else {
-            alert("ইমেজ আপলোড ব্যর্থ হয়েছে!");
+            alert("ছবি আপলোড ব্যর্থ হয়েছে!");
         }
     } catch (error) {
-        console.error("Error uploading image:", error);
-        alert("নেটওয়ার্ক সমস্যা! আবার চেষ্টা করুন।");
+        alert("নেটওয়ার্ক সমস্যা!");
     } finally {
         messageInput.placeholder = "মেসেজ লিখুন...";
         messageInput.disabled = false;
-        imageInput.value = ""; // রিসেট ইনপুট
+        imageInput.value = "";
     }
 });
 
-// রুম থেকে বের হয়ে যাওয়ার লজিক
+// রুম থেকে বের হওয়া ও সাইন আউট
 leaveBtn.addEventListener('click', () => {
     if (unsubscribeChat) unsubscribeChat();
-    loginContainer.classList.remove('chat-hidden');
-    chatContainer.classList.add('chat-hidden');
-    chatMessages.innerHTML = "";
+    auth.signOut(); // ইউজার সাইন আউট হয়ে লগইন পেজে চলে যাবে
 });
