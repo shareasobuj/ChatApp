@@ -1,12 +1,11 @@
-// ১. প্রয়োজনীয় Firebase মডিউলগুলো ইমপোর্ট করুন
+// Firebase SDK মডিউলসমূহ ইমপোর্ট
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// ২. আপনার Firebase কনফিগারেশন
+// ========================================================
+// ⚠️ এখানে আপনার নিজের Firebase Config এবং ImgBB API Key বসাবেন
+// ========================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCEdRuYGcek5H0i9esjRF6SUzfbRAF_6IY",
   authDomain: "privateapp-84e1f.firebaseapp.com",
@@ -17,20 +16,44 @@ const firebaseConfig = {
   measurementId: "G-B0MYHMC944"
 };
 
-// Firebase ইনিশিয়ালাইজ করুন
+const IMGBB_API_KEY = "6872e0a43175b6750389b34f632f4d99";
+// ========================================================
+
+// Firebase ইনিশিয়ালাইজেশন
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const database = getDatabase(app);
 
-// --- CONFIGURATION ---
-const IMGBB_API_KEY = "6872e0a43175b6750389b34f632f4d99"; // আপনার আসল ImgBB API Key বসানো হলো
-
-// ৪. HTML এলিমেন্টগুলো সিলেক্ট করুন
+// HTML এলিমেন্টস সিলেকশন
+const formTitle = document.getElementById("formTitle");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
-const imageInput = document.getElementById("imageFileInput"); // HTML-এ এই ইনপুটটি থাকতে হবে (type="file")
+const imageInputGroup = document.getElementById("imageInputGroup");
+const imageFileInput = document.getElementById("imageFileInput");
 const mainBtn = document.getElementById("mainBtn");
+const toggleLink = document.getElementById("toggleLink");
 
-// --- ImgBB-তে ছবি আপলোড করার হেল্পার ফাংশন ---
+let isLoginView = true; // ডিফল্টভাবে লগইন স্ক্রিন থাকবে
+
+// ইন্টারফেস টগল (লগইন <-> সাইন-আপ) করার ফাংশন
+toggleLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  isLoginView = !isLoginView;
+
+  if (!isLoginView) {
+    formTitle.innerText = "Private Chat (Sign Up)";
+    mainBtn.innerText = "সাইন-আপ করুন";
+    toggleLink.innerText = "আগের অ্যাকাউন্ট থাকলে লগইন করুন";
+    imageInputGroup.style.display = "block"; // ছবি আপলোডের অপশন দেখাবে
+  } else {
+    formTitle.innerText = "Private Chat";
+    mainBtn.innerText = "লগইন করুন";
+    toggleLink.innerText = "নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন";
+    imageInputGroup.style.display = "none"; // ছবি আপলোডের অপশন লুকিয়ে ফেলবে
+  }
+});
+
+// ImgBB-তে ছবি আপলোড করার অ্যাসিনক্রোনাস ফাংশন
 async function uploadImageToImgBB(file) {
   const formData = new FormData();
   formData.append("image", file);
@@ -40,69 +63,95 @@ async function uploadImageToImgBB(file) {
       method: "POST",
       body: formData
     });
-    
     const data = await response.json();
     if (data.success) {
-      console.log("ImgBB Upload Successful:", data.data.url);
-      return data.data.url; // আপলোড হওয়া ছবির ডিরেক্ট ইউআরএল (URL) রিটার্ন করবে
+      return data.data.url; // আপলোড করা ছবির ডিরেক্ট লিঙ্ক
     } else {
       throw new Error(data.error.message);
     }
   } catch (error) {
-    console.error("ImgBB Upload Failed:", error);
-    alert("ছবি আপলোড ব্যর্থ হয়েছে: " + error.message);
+    console.error("ImgBB Error:", error);
+    alert("ছবি আপলোড ব্যর্থ: " + error.message);
     return null;
   }
 }
 
-// --- মেইন বাটন ক্লিক ইভেন্ট (লগইন অথবা সাইন-আপ) ---
-if (mainBtn) {
-  mainBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
+// সাবমিট বাটন ক্লিক ইভেন্ট হ্যান্ডলার
+mainBtn.addEventListener("click", async (e) => {
+  e.preventDefault(); // পেজ রিফ্রেশ হওয়া বন্ধ করবে
 
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-    
-    if (!email || !password) {
-      alert("অনুগ্রহ করে ইমেইল এবং পাসওয়ার্ড দিন।");
-      return;
-    }
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
 
-    // বর্তমান বাটনটি সাইন-আপ নাকি লগইন মোডে আছে তা চেক করা হচ্ছে ID দিয়ে
-    if (mainBtn.id === "signupBtn") {
-      // --- সাইন-আপ প্রসেস ---
-      let imageUrl = "";
-      
-      // ইউজার যদি কোনো ছবি সিলেক্ট করে থাকে
-      if (imageInput && imageInput.files.length > 0) {
-        alert("প্রথমে আপনার ছবিটি আপলোড হচ্ছে, দয়া করে অপেক্ষা করুন...");
-        imageUrl = await uploadImageToImgBB(imageInput.files[0]);
-        if (!imageUrl) return; // ছবি আপলোড না হলে সাইন-আপ থামিয়ে দেবে
-      }
-
-      createUserWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
-          alert("অ্যাকাউন্ট তৈরি সফল হয়েছে!");
-          
-          // এখানে আপনি imageUrl টি Firebase Realtime Database বা Firestore-এ ইউজারের প্রোফাইলে সেভ করতে পারেন
-          console.log("Registered User:", user);
-          console.log("User Profile Image Link:", imageUrl);
-        })
-        .catch((error) => {
-          alert("অ্যাকাউন্ট তৈরি করা যায়নি: " + error.message);
-        });
-
-    } else {
-      // --- লগইন প্রসেস ---
-      signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          alert("লগইন সফল হয়েছে!");
-          // window.location.href = "dashboard.html";
-        })
-        .catch((error) => {
-          alert("লগইন ব্যর্থ হয়েছে: " + error.message);
-        });
-    }
-  });
+  if (!email || !password) {
+    alert("দয়া করে ইমেইল এবং পাসওয়ার্ড ফিল্ড পূরণ করুন।");
+    return;
   }
+
+  if (!isLoginView) {
+    // ------------------ সাইন-আপ প্রসেস ------------------
+    let profileImageUrl = "https://placeholder.co/150"; // ডিফল্ট ছবি
+
+    // যদি ব্যবহারকারী ছবি সিলেক্ট করে থাকে
+    if (imageFileInput.files.length > 0) {
+      mainBtn.innerText = "ছবি আপলোড হচ্ছে...";
+      mainBtn.disabled = true;
+      
+      const uploadedUrl = await uploadImageToImgBB(imageFileInput.files[0]);
+      if (uploadedUrl) {
+        profileImageUrl = uploadedUrl;
+      } else {
+        mainBtn.innerText = "সাইন-আপ করুন";
+        mainBtn.disabled = false;
+        return;
+      }
+    }
+
+    mainBtn.innerText = "অ্যাকাউন্ট তৈরি হচ্ছে...";
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+
+        // Firebase Realtime Database-এ ইউজারের ডেটা ও ছবির লিঙ্ক সেভ
+        set(ref(database, "users/" + user.uid), {
+          uid: user.uid,
+          email: email,
+          profilePic: profileImageUrl,
+          createdAt: new Date().toISOString()
+        })
+        .then(() => {
+          alert("অ্যাকাউন্ট এবং ডাটাবেজ প্রোফাইল সফলভাবে তৈরি হয়েছে!");
+          window.location.href = "chat.html"; // সফল হলে চ্যাট পেজে নিয়ে যাবে
+        })
+        .catch((dbError) => {
+          alert("ডাটাবেজে তথ্য সেভ করা যায়নি: " + dbError.message);
+        });
+      })
+      .catch((authError) => {
+        alert("সাইন-আপ ব্যর্থ: " + authError.message);
+      })
+      .finally(() => {
+        mainBtn.innerText = "সাইন-আপ করুন";
+        mainBtn.disabled = false;
+      });
+
+  } else {
+    // ------------------ লগইন প্রসেস ------------------
+    mainBtn.innerText = "লগইন হচ্ছে...";
+    mainBtn.disabled = true;
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        alert("লগইন সফল হয়েছে!");
+        window.location.href = "chat.html"; // সফল লগইনে আপনার চ্যাট পেজে নিয়ে যাবে
+      })
+      .catch((loginError) => {
+        alert("লগইন ব্যর্থ: " + loginError.message);
+      })
+      .finally(() => {
+        mainBtn.innerText = "লগইন করুন";
+        mainBtn.disabled = false;
+      });
+  }
+});
