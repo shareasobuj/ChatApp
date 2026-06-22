@@ -1,6 +1,5 @@
 // --- CONFIGURATION ---
-const IMGBB_API_KEY = "YOUR_IMGBB_API_KEY_HERE"; // আপনার ImgBB API Key এখানে দিন
-
+const IMGBB_API_KEY = "6872e0a43175b6750389b34f632f4d99"; // আপনার আসল ImgBB API Key বসানো হলো
 // PieSocket Free Demo Cluster (এটি অনেকগুলো মোবাইলকে একসাথে কানেক্ট করবে)
 const PIESOCKET_API_KEY = "VC1vyS7Ee06FBm9U76szwFl80P14wE369OoK6mOI"; 
 const PIESOCKET_ROOM_ID = "whatsapp_global_room_2026";
